@@ -1,0 +1,91 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Rastreador de precios</title>
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>📉</text></svg>" />
+</head>
+<body>
+  <header class="top">
+    <div class="brand">
+      <h1>Rastreador de precios</h1>
+      <p>Anota un precio hoy, compáralo mañana.</p>
+    </div>
+    <div class="top-actions">
+      <span id="sync" class="sync"></span>
+      <button class="btn ghost" id="btn-export" type="button">Exportar copia</button>
+      <button class="btn ghost" id="btn-import" type="button">Importar copia</button>
+      <input type="file" id="file-import" accept="application/json" hidden />
+    </div>
+  </header>
+
+  <main class="layout">
+    <aside class="side">
+      <section class="card" id="add-card">
+        <div class="tabs" role="tablist">
+          <button role="tab" class="tab is-active" data-tab="manual">Manual</button>
+          <button role="tab" class="tab" data-tab="image">Captura</button>
+          <button role="tab" class="tab" data-tab="voice">Voz</button>
+        </div>
+
+        <form id="form-manual" class="pane" data-pane="manual" autocomplete="off">
+          <label>Producto
+            <input id="f-name" list="product-names" placeholder="Ej: Leche entera 1 L" required />
+            <datalist id="product-names"></datalist>
+          </label>
+          <div class="row">
+            <label>Precio
+              <input id="f-price" inputmode="decimal" placeholder="4.500" required />
+            </label>
+            <label>Fecha
+              <input id="f-date" type="date" required />
+            </label>
+          </div>
+          <button class="btn primary" type="submit">Guardar precio</button>
+          <p class="hint">Si el producto ya existe, el precio se suma a su historial.</p>
+        </form>
+
+        <div class="pane" data-pane="image" hidden>
+          <label class="drop" id="drop" tabindex="0">
+            <input type="file" id="file-img" accept="image/*" hidden />
+            <strong>Suelta una captura aquí</strong>
+            <span>o haz clic, o pega con Ctrl+V</span>
+          </label>
+          <div id="ocr-status" class="ocr-status" hidden>
+            <div class="bar"><i id="ocr-bar"></i></div>
+            <span id="ocr-msg"></span>
+          </div>
+          <img id="ocr-preview" class="preview" alt="" hidden />
+          <div id="ocr-results" hidden>
+            <p class="hint">Revisa lo que se detectó. Corrige nombre o precio si hace falta.</p>
+            <ul id="ocr-list" class="ocr-list"></ul>
+            <button class="btn primary" id="ocr-save" type="button">Guardar seleccionados</button>
+            <details class="raw"><summary>Ver texto leído</summary><pre id="ocr-raw"></pre></details>
+          </div>
+        </div>
+
+        <div class="pane" data-pane="voice" hidden>
+          <p class="hint top-hint">Di el producto y el precio, por ejemplo: «arroz diana 4200».</p>
+          <button class="btn primary" id="btn-voice" type="button">Dictar</button>
+          <p id="voice-msg" class="hint"></p>
+        </div>
+      </section>
+
+      <section class="card">
+        <div class="list-head">
+          <h2>Productos</h2>
+          <span id="count" class="pill"></span>
+        </div>
+        <input id="search" class="search" type="search" placeholder="Buscar producto" />
+        <ul id="product-list" class="product-list"></ul>
+      </section>
+    </aside>
+
+    <section class="main card" id="detail"></section>
+  </main>
+
+  <div id="toast" class="toast" role="status" aria-live="polite"></div>
+  <script type="module" src="/src/main.js"></script>
+</body>
+</html>
