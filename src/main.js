@@ -2,7 +2,7 @@ import './style.css';
 import '@fontsource-variable/bricolage-grotesque';
 import '@fontsource-variable/figtree';
 import Chart from 'chart.js/auto';
-import { subscribe, importProducts, migrateLocal, addPrice, removeEntry, removeProduct, restoreProduct, todayISO } from './store.js';
+import { subscribe, migrateLocal, addPrice, addPriceToProduct, removeEntry, removeProduct, restoreProduct, todayISO } from './store.js';
 import { parsePriceToken, extractCandidates } from './parse.js';
 import { readImage } from './ocr.js';
 
@@ -275,8 +275,23 @@ function renderDetail() {
         <div class="d-price">${fmt(last.price)}</div>
         <p class="d-sub">${d ? `<span class="chip ${cls}">${d.diff === 0 ? 'Sin cambio' : (d.diff < 0 ? '↓ ' : '↑ ') + fmt(Math.abs(d.diff)) + ' (' + pct(d.pct) + ')'}</span> frente al registro anterior. ` : 'Primer registro. '}${verdict}</p>
       </div>
-      <button class="btn ghost danger" id="del-product" type="button">Eliminar producto</button>
+      <div class="d-actions">
+        <button class="btn ghost accent" id="btn-new-price" type="button">+ Agregar precio de hoy</button>
+        <button class="btn ghost danger" id="del-product" type="button">Eliminar producto</button>
+      </div>
     </div>
+    <form class="new-price" id="new-price-form" autocomplete="off" hidden>
+      <label>Nuevo precio
+        <input id="np-price" inputmode="decimal" placeholder="4.500" required />
+      </label>
+      <label>Fecha
+        <input id="np-date" type="date" required />
+      </label>
+      <div class="np-actions">
+        <button class="btn primary" type="submit">Guardar precio</button>
+        <button class="btn ghost" id="np-cancel" type="button">Cancelar</button>
+      </div>
+    </form>
     <div class="chart-wrap"><canvas id="chart" role="img" aria-label="Gráfica del precio de ${esc(p.name)}"></canvas></div>
     <dl class="stats">
       <div><dt>Más bajo</dt><dd>${fmt(min.price)}</dd><small>${dateLong(min.date)}</small></div>
@@ -302,6 +317,34 @@ function renderDetail() {
     </details>`;
 
   $('#del-product').addEventListener('click', () => deleteProductWithUndo(state.selected));
+  const priceForm = $('#new-price-form');
+  $('#btn-new-price').addEventListener('click', () => {
+    const date = $('#np-date');
+    date.value = todayISO();
+    date.max = todayISO();
+    priceForm.hidden = false;
+    $('#btn-new-price').hidden = true;
+    $('#np-price').focus();
+  });
+  $('#np-cancel').addEventListener('click', () => {
+    priceForm.hidden = true;
+    $('#btn-new-price').hidden = false;
+    $('#np-price').value = '';
+  });
+  priceForm.addEventListener('submit', (e) => {
+    e.preventDefault();
+    const id = state.selected;
+    const product = state.data.products[id];
+    if (!product) return;
+    const price = parsePriceToken($('#np-price').value);
+    if (!(price > 0)) return toast('El precio no es válido. Usa un formato como 4.500.');
+    let r;
+    try { r = addPriceToProduct(state.data, id, price, $('#np-date').value || todayISO()); }
+    catch (err) { return toast(err.message); }
+    r.done.catch(syncError);
+    toast(describeSave(product.name, price, r));
+    render();
+  });
   $$('.x', box).forEach((b) => b.addEventListener('click', () => {
     const id = state.selected, date = b.dataset.date;
     const copy = JSON.parse(JSON.stringify(state.data.products[id]));
@@ -347,28 +390,6 @@ function drawChart(entries) {
     },
   });
 }
-
-/* ---------- copia de seguridad ---------- */
-$('#btn-export').addEventListener('click', () => {
-  const blob = new Blob([JSON.stringify(state.data, null, 2)], { type: 'application/json' });
-  const a = document.createElement('a');
-  a.href = URL.createObjectURL(blob);
-  a.download = `precios-${todayISO()}.json`;
-  a.click();
-  URL.revokeObjectURL(a.href);
-});
-$('#btn-import').addEventListener('click', () => $('#file-import').click());
-$('#file-import').addEventListener('change', async (e) => {
-  const f = e.target.files[0];
-  if (!f) return;
-  try {
-    const json = JSON.parse(await f.text());
-    if (!json.products || typeof json.products !== 'object') throw new Error('formato');
-    const n = await importProducts(state.data, json.products);
-    toast(`Copia importada: ${n} producto${n === 1 ? '' : 's'}.`);
-  } catch (err) { toast(err.message === 'formato' ? 'Ese archivo no es una copia válida.' : 'No se pudo importar: ' + err.message); }
-  e.target.value = '';
-});
 
 function render() { renderList(); renderDetail(); }
 

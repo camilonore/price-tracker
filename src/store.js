@@ -31,23 +31,33 @@ export function subscribe(onData, onError) {
   );
 }
 
+function applyPrice(p, price, date) {
+  const previous = [...p.entries].sort((a, b) => a.date.localeCompare(b.date)).reverse().find((e) => e.date < date) || null;
+  const sameDay = p.entries.find((e) => e.date === date);
+  if (sameDay) sameDay.price = price;
+  else p.entries.push({ date, price });
+  p.entries.sort((a, b) => a.date.localeCompare(b.date));
+  p.updated = Date.now();
+  return { status: sameDay ? 'replaced' : 'added', previous };
+}
+
 /** Devuelve { id, status: 'new' | 'added' | 'replaced', previous, done } */
 export function addPrice(data, name, price, date = todayISO()) {
   const id = normalize(name);
   if (!id) throw new Error('El nombre debe tener letras o números.');
   let p = data.products[id];
-  let status = 'added';
-  if (!p) {
-    p = data.products[id] = { name: name.trim().replace(/\s+/g, ' '), entries: [] };
-    status = 'new';
-  }
-  const previous = [...p.entries].sort((a, b) => a.date.localeCompare(b.date)).reverse().find((e) => e.date < date) || null;
-  const sameDay = p.entries.find((e) => e.date === date);
-  if (sameDay) { sameDay.price = price; status = 'replaced'; }
-  else p.entries.push({ date, price });
-  p.entries.sort((a, b) => a.date.localeCompare(b.date));
-  p.updated = Date.now();
-  return { id, status, previous, done: persist(id, p) };
+  const isNew = !p;
+  if (isNew) p = data.products[id] = { name: name.trim().replace(/\s+/g, ' '), entries: [] };
+  const r = applyPrice(p, price, date);
+  return { id, status: isNew ? 'new' : r.status, previous: r.previous, done: persist(id, p) };
+}
+
+/** Agrega un precio a un producto ya existente, sin depender del nombre. */
+export function addPriceToProduct(data, id, price, date = todayISO()) {
+  const p = data.products[id];
+  if (!p) throw new Error('Ese producto ya no existe.');
+  const r = applyPrice(p, price, date);
+  return { id, status: r.status, previous: r.previous, done: persist(id, p) };
 }
 
 export const removeProduct = (id) => deleteDoc(ref(id));

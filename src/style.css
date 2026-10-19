@@ -46,7 +46,8 @@ button, input { font: inherit; color: inherit; }
 .btn:disabled { opacity: .6; cursor: progress; }
 .btn.ghost { background: var(--surface); border-color: var(--line); color: var(--ink); font-size: .9rem; padding: 8px 12px; }
 .btn.ghost:hover { border-color: #C6CFDD; }
-.btn.danger { color: var(--up); }
+.btn.ghost.accent { color: var(--accent); border-color: #C9D5FF; background: var(--accent-soft); }
+.btn.ghost.accent:hover { background: #DDE5FF; border-color: #B4C4FF; }
 .btn.danger:hover { background: var(--up-soft); border-color: var(--up-soft); }
 
 /* pestañas */
@@ -112,6 +113,13 @@ input:focus, textarea:focus { border-color: var(--accent); outline: 3px solid va
 .d-name { font-size: 1.15rem; font-weight: 600; color: var(--muted); }
 .d-price { font-family: var(--display); font-weight: 700; font-size: clamp(2.6rem, 6vw, 4.2rem); line-height: 1.05; letter-spacing: -0.035em; margin: 4px 0 6px; font-variant-numeric: tabular-nums; }
 .d-sub { margin: 0; color: var(--muted); max-width: 60ch; }
+.d-actions { display: flex; gap: 8px; flex-wrap: wrap; }
+.d-actions .btn { width: auto; }
+.new-price { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; align-items: end; margin-top: 18px; padding: 14px; background: var(--bg); border-radius: 12px; }
+.new-price[hidden] { display: none; }
+.new-price .np-actions { grid-column: 1 / -1; display: flex; gap: 8px; flex-wrap: wrap; }
+.new-price .np-actions .btn { width: auto; }
+@media (max-width: 480px) { .new-price { grid-template-columns: 1fr; } }
 .chart-wrap { position: relative; height: 340px; margin: 24px 0 8px; }
 .stats { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin: 20px 0 0; }
 .stats div { background: var(--bg); border-radius: 12px; padding: 12px 14px; }
